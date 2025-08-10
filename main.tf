@@ -152,3 +152,8 @@ resource "azurerm_storage_blob" "website_assets" {
   type                   = "Block"
   source                 = "website/assets/${each.value}"  # Path to local file
 }
+
+# Create a Hosted Zone in Route 53
+resource "aws_route53_zone" "main" {
+  name = "reimu.shop"
+}
