@@ -157,3 +157,59 @@ resource "azurerm_storage_blob" "website_assets" {
 resource "aws_route53_zone" "main" {
   name = "reimu.shop"
 }
+
+# AWS (Primary) Health Check
+resource "aws_route53_health_check" "aws_health_check" {
+  type              = "HTTPS"
+  fqdn              = "reimu.shop"
+  port              = 443
+  request_interval  = 30
+  failure_threshold = 3
+}
+
+# Azure (Secondary) Health Check
+resource "aws_route53_health_check" "azure_health_check" {
+  type              = "HTTPS"
+  fqdn              = "reimu.shop"
+  port              = 443
+  request_interval  = 30
+  failure_threshold = 3
+}
+
+# Primary Record (AWS - CloudFront)
+resource "aws_route53_record" "primary" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "reimu.shop"
+  type    = "A"
+
+  alias {
+    name                   = "d3fbyyr9hqb13d.cloudfront.net"
+    zone_id                = "Z2FDTNDATAQYW2"  # CloudFront's hosted zone ID
+    evaluate_target_health = true
+  }
+
+  failover_routing_policy {
+    type = "PRIMARY"
+  }
+
+  set_identifier = "primary"
+  health_check_id = aws_route53_health_check.aws_health_check.id
+}
+
+# Secondary Record (Azure - Blob Storage)
+resource "aws_route53_record" "secondary" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "www.reimu.shop"
+  type    = "CNAME"
+
+  records = ["marisastorage345382.z13.web.core.windows.net"]
+
+  ttl = 300
+
+  failover_routing_policy {
+    type = "SECONDARY"
+  }
+
+  set_identifier = "secondary"
+  health_check_id = aws_route53_health_check.azure_health_check.id
+}
