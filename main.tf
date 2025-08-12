@@ -213,3 +213,9 @@ resource "aws_route53_record" "secondary" {
   set_identifier = "secondary"
   health_check_id = aws_route53_health_check.azure_health_check.id
 }
+
+# Register custom domain to the Storage Account
+resource "azurerm_storage_account_custom_domain" "custom_domain" {
+  storage_account_id = azurerm_storage_account.storage.id
+  name               = "www.reimu.shop"
+}
